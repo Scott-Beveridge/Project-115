@@ -74,10 +74,14 @@ class GameEngine {
     };
 
     startInput() {
-        const getXandY = e => ({
-            x: e.clientX - this.ctx.canvas.getBoundingClientRect().left,
-            y: e.clientY - this.ctx.canvas.getBoundingClientRect().top
-        });
+        //Canvas pixels, which differ from CSS pixels when the canvas is stretched to fit a phone screen
+        const getXandY = e => {
+            const rect = this.ctx.canvas.getBoundingClientRect()
+            return {
+                x: (e.clientX - rect.left) * (this.ctx.canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (this.ctx.canvas.height / rect.height)
+            }
+        };
 
         this.ctx.canvas.addEventListener("mousemove", e => {
             if (this.options.debugging) {

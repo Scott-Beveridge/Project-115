@@ -54,7 +54,7 @@ class DoneLoadingScreen extends FrontEnd {
         GAME_ENGINE.ctx.shadowOffsetX = 5;
         GAME_ENGINE.ctx.shadowOffsetY = 5;
         GAME_ENGINE.ctx.fillText("Loading Completed", GAME_ENGINE.ctx.canvas.width/2 - 250, GAME_ENGINE.ctx.canvas.height/2)
-        GAME_ENGINE.ctx.fillText("Click the screen to continue...", GAME_ENGINE.ctx.canvas.width/2 - 250, GAME_ENGINE.ctx.canvas.height/2 + 45)
+        GAME_ENGINE.ctx.fillText((MOBILE_MODE ? "Tap" : "Click") + " the screen to continue...", GAME_ENGINE.ctx.canvas.width/2 - 250, GAME_ENGINE.ctx.canvas.height/2 + 45)
         GAME_ENGINE.ctx.restore()
     }
 }
@@ -278,12 +278,9 @@ class PauseMenu extends FrontEnd { //TODO inheritance
             GAME_ENGINE.ctx.font = 'bold 100px Agency FB'
             GAME_ENGINE.ctx.fillText("Controls", FE_X + statsOffsetX, FE_Y + 70 + 60 + 150)
             GAME_ENGINE.ctx.font = 'bold 50px arial'
-            GAME_ENGINE.ctx.fillText("WASD - Move", FE_X + statsOffsetX, FE_Y + 70 + 60 + 150 + 70) //TODO do arithmetic
-            GAME_ENGINE.ctx.fillText("MouseL - Shoot", FE_X + statsOffsetX, FE_Y + 70 + 60 + 150 + 70 + 60)
-            GAME_ENGINE.ctx.fillText("MouseR - Knife", FE_X + statsOffsetX, FE_Y + 70 + 60 + 150 + 70 + (60*2))
-            GAME_ENGINE.ctx.fillText("R - Reload", FE_X + statsOffsetX, FE_Y + 70 + 60 + 150 + 70+ (60*3))
-            GAME_ENGINE.ctx.fillText("Q - Switch Weapons", FE_X + statsOffsetX, FE_Y + 70 + 60 + 150 + 70 + (60*4))
-            GAME_ENGINE.ctx.fillText("E - Throw Grenade", FE_X + statsOffsetX, FE_Y + 70 + 60 + 150 + 70 + (60*5))
+            controlsHelpLines().forEach((line, i) => {
+                GAME_ENGINE.ctx.fillText(line, FE_X + statsOffsetX, FE_Y + 70 + 60 + 150 + 70 + (60*i))
+            })
 
             if (GAME_ENGINE.options.mainMenu_options_cheats) {
                 GAME_ENGINE.ctx.fillText("P - Draw Collision", FE_X + statsOffsetX + 800, FE_Y + 70 + 60 + 150 + 70)
@@ -641,13 +638,9 @@ class ControlsMenu extends FrontEnd {
         GAME_ENGINE.ctx.fillStyle = "white"
         GAME_ENGINE.ctx.fillText("Controls", FE_X + offset, FE_Y + 150)
         GAME_ENGINE.ctx.font = 'bold 50px arial'
-        GAME_ENGINE.ctx.fillText("WASD - Move", FE_X + offset, FE_Y + 150 + 70) //TODO do arithmetic
-        GAME_ENGINE.ctx.fillText("MouseL - Shoot", FE_X + offset, FE_Y + 150 + 70 + 60)
-        GAME_ENGINE.ctx.fillText("MouseR - Knife", FE_X + offset, FE_Y  + 150 + 70 + (60*2))
-        GAME_ENGINE.ctx.fillText("R - Reload", FE_X + offset, FE_Y + 150 + 70+ (60*3))
-        GAME_ENGINE.ctx.fillText("Q - Switch Weapons", FE_X + offset, FE_Y + 150 + 70 + (60*4))
-        GAME_ENGINE.ctx.fillText("E - Throw Grenade", FE_X + offset, FE_Y + 150 + 70 + (60*5))
-        GAME_ENGINE.ctx.fillText("ESC - Pause", FE_X + offset, FE_Y + 150 + 70 + (60*6))
+        controlsHelpLines().forEach((line, i) => {
+            GAME_ENGINE.ctx.fillText(line, FE_X + offset, FE_Y + 150 + 70 + (60*i))
+        })
         GAME_ENGINE.ctx.restore()
     }
 }

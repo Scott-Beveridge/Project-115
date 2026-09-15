@@ -108,7 +108,7 @@ class HUDGun {
             if (this.curr_gun.currentTotalAmmo === 0) {
                 text = "Empty"
             } else {
-                text = "(R to Reload) " + this.curr_gun.currentMagazineAmmo + " / " + this.curr_gun.currentTotalAmmo
+                text = "(" + controlName("reload") + " to Reload) " + this.curr_gun.currentMagazineAmmo + " / " + this.curr_gun.currentTotalAmmo
             }
             GAME_ENGINE.ctx.font = 'bold 60px arial'
         } else if (this.curr_gun.currentReloadTime <= 0) {

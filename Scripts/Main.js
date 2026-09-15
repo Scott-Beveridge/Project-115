@@ -105,6 +105,10 @@ ASSET_MANAGER.downloadAll(() => {
 	GAME_ENGINE.addEntity(new DoneLoadingScreen());
 
 	GAME_ENGINE.init(ctx);
+	GAME_ENGINE.mobileInput = new MobileInput(GAME_ENGINE);
+	GAME_ENGINE.mobileInput.init();
 	GAME_ENGINE.start();
+
+	if (typeof cacheGameForOffline === "function") cacheGameForOffline();
 });
 

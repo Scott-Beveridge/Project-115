@@ -1022,7 +1022,7 @@ class Barrier {
 
     hudText() {
         if (this.hp < BARRIER_MAX_HP) {
-            GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("Hold F to repair")
+            GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("Hold " + controlName("use") + " to repair")
         }
     }
 }
@@ -1126,7 +1126,7 @@ class Door extends MapInteract {
     }
 
     hudText() {
-        GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("F to unlock for " + this.cost)
+        GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText(controlName("use") + " to unlock for " + this.cost)
     }
 }
 
@@ -1295,13 +1295,13 @@ class WallBuyTrigger {
         let text = null
         switch (this.state) {
             case 0:
-                text = "F to purchase " + this.gunName + " for " + this.costCurrent
+                text = controlName("use") + " to purchase " + this.gunName + " for " + this.costCurrent
                 break
             case 1:
-                text = "F to purchase ammo for " + this.costCurrent
+                text = controlName("use") + " to purchase ammo for " + this.costCurrent
                 break
             case 2:
-                text = "F to purchase PaP ammo for " + this.costCurrent
+                text = controlName("use") + " to purchase PaP ammo for " + this.costCurrent
                 break
 
         }
@@ -1524,10 +1524,10 @@ class MysteryBox extends MapInteract {
     hudText() {
         switch (this.state) {
             case 0:
-                GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("F to use the Mystery Box for " + MYSTERYBOX_COST)
+                GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText(controlName("use") + " to use the Mystery Box for " + MYSTERYBOX_COST)
                 break
             case 2:
-                GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("F to use pick up " + this.curr_GunOffer.name)
+                GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText(controlName("use") + " to use pick up " + this.curr_GunOffer.name)
                 break
         }
     }
@@ -1635,7 +1635,7 @@ class PowerSwitch extends MapInteract {
 
     hudText() {
         if (!this.power) {
-            GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("F to turn on power")
+            GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText(controlName("use") + " to turn on power")
         }
     }
 }
@@ -1709,7 +1709,7 @@ class PerkMachine extends MapInteract {
             GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("No power")
             return false
         }
-        GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("F to purchase " + this.perk + " for " + this.cost)
+        GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText(controlName("use") + " to purchase " + this.perk + " for " + this.cost)
         //already has the perk
         return this.checkAlreadyHavePerk()
     }
@@ -1858,7 +1858,7 @@ class PerkMachine_QRevive extends PerkMachine { //TODO bad inheritance, super mu
     }
 
     hudText() {
-        GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("F to purchase " + this.perk + " for " + this.cost)
+        GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText(controlName("use") + " to purchase " + this.perk + " for " + this.cost)
         //already has the perk
         return this.checkAlreadyHavePerk()
     }
@@ -2236,14 +2236,14 @@ class PackAPunch extends MapInteract {
             case 0: //waiting
                 if (GAME_ENGINE.camera.map.powerSwitch.power) {//power
                     if (!GAME_ENGINE.ent_Player.gunInventory[GAME_ENGINE.ent_Player.currentGunIndex].isPaP) {//if no Pap yet
-                        GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("F to upgrade current gun for " + PAP_COST)
+                        GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText(controlName("use") + " to upgrade current gun for " + PAP_COST)
                     }
                 } else {
                     GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("No power")
                 }
                 break
             case 4: //offer gun
-                GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText("F to pick up " + this.currGun.name)
+                GAME_ENGINE.camera.map.hud.bottomMiddleInteract.displayText(controlName("use") + " to pick up " + this.currGun.name)
                 break
         }
     }

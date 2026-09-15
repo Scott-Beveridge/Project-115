@@ -5,6 +5,14 @@ https://varunparbhakar.github.io/Project-115/
 A 2D top down clone of Call of Duty Zombies in HTML & JavaScript featuring a reimagine of BO2 Town, WaW and BO1 guns, custom made music and scuffed voice acting. <br>
 ### Trailer
 [![Trailer](https://i.ytimg.com/vi/tio99lsWwMc/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBQ3PfIrlQzoRN4-letMlw4Kz5hTg)](https://www.youtube.com/watch?v=tio99lsWwMc)
+## Phone & Controller
+Open the game on your phone in Safari, tap **Share → Add to Home Screen**, then launch it from the new icon while you have internet. It saves itself for offline play (about 90 MB) and shows "Saved for offline play" when it's done. After that it runs in airplane mode.
+
+- **Controller** (Backbone, Xbox, PlayStation): Left stick move (click to sprint), right stick aim, RT shoot, LT/B knife, A buy/use, X reload, Y switch weapons, RB grenade, Menu pause. In menus, either stick moves the cursor and A clicks.
+- **Touch**: left thumb moves (push to the edge to sprint), right thumb aims and shoots, plus BUY, RELOAD, SWAP, NADE and KNIFE buttons.
+
+Game updates download in the background and apply the next time the game is opened. After adding or renaming assets, run `python3 tools/make_offline_list.py` so they're included in the offline copy.
+
 ## Credits
 ### TCSS 491 A - Blue 5 
 - Varun Parbhakar: Coding, Textures, Mapping, Voice Acting<br>
