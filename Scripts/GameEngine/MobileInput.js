@@ -13,11 +13,13 @@ const CANVAS_MIN_HEIGHT = 1440
 const STICK_DEADZONE = 0.25
 const STICK_DIAGONAL = 0.38 //sin(22.5deg): split the stick into 8 directions for WASD
 const SPRINT_STICK_THRESHOLD = 0.92 //pushing the move stick to the edge sprints
-const AIM_DISTANCE_MIN = 300 //world px from the player to the aim point; camera looks halfway there
-const AIM_DISTANCE_MAX = 1000
+//World px from the player to the virtual mouse. The game centres the camera halfway between the player and
+//the mouse, so keeping this short keeps the camera on the player while the stick only turns them.
+const AIM_DISTANCE = 100
 const MENU_CURSOR_SPEED = 2200 //canvas px per second at full stick
 
 const TOUCH_STICK_RADIUS_VMIN = 11
+const TOUCH_MENU_SNAP_PX = 32 //screen px: a menu tap this close to a button counts as hitting it
 const TOUCH_FIRE_THRESHOLD = 0.35
 
 //Standard Gamepad API button indices
@@ -62,9 +64,9 @@ class MobileInput {
         this.padButtonsLast = []
         this.padSprintLatched = false
         this.aimAngle = 0
-        this.aimDistance = AIM_DISTANCE_MIN
         this.lastInput = "mouse" //"mouse" | "pad" | "touch"
-        this.releaseClickAfterUpdate = false
+        this.menuTapQueued = false //a menu tap waiting to be delivered as a fresh click
+        this.menuFingerDown = false
 
         this.touches = new Map() //touch identifier -> role
         this.moveStick = null
@@ -93,10 +95,10 @@ class MobileInput {
             this.pollGamepad()
             this.applyAim()
             this.applyAutoReload()
+            this.deliverMenuTap()
             this.flush()
             update()
-            if (this.releaseClickAfterUpdate) {
-                this.releaseClickAfterUpdate = false
+            if (this.touchHeld.left_click && !this.menuFingerDown && !this.isInGame()) {
                 this.touchHeld.left_click = false
                 this.flush()
             }
@@ -205,13 +207,8 @@ class MobileInput {
             held.key_switchGuns = button(PAD_Y)
             held.key_grenade = button(PAD_RB)
 
-            const aimMagnitude = Math.hypot(rx, ry)
-            if (aimMagnitude > STICK_DEADZONE) {
+            if (Math.hypot(rx, ry) > STICK_DEADZONE) {
                 this.aimAngle = Math.atan2(ry, rx)
-                this.setAimDistance(aimMagnitude)
-                this.aimSource = "pad"
-            } else if (this.aimSource === "pad") {
-                this.setAimDistance(0)
             }
         } else if (this.lastInput === "pad") {
             //Menus: either stick or the d-pad moves the cursor, A clicks
@@ -242,13 +239,6 @@ class MobileInput {
         this.padButtonsLast = pad.buttons.map((b, i) => button(i))
     }
 
-    setAimDistance(magnitude) {
-        const target = AIM_DISTANCE_MIN + (AIM_DISTANCE_MAX - AIM_DISTANCE_MIN) * Math.min(1, magnitude)
-        //ease toward the target so the camera doesn't snap
-        const t = Math.min(1, this.engine.clockTick * 8)
-        this.aimDistance += (target - this.aimDistance) * t
-    }
-
     ensureMouse() {
         if (this.engine.mouse == null) {
             this.engine.mouse = {x: this.engine.ctx.canvas.width / 2, y: this.engine.ctx.canvas.height / 2}
@@ -258,15 +248,15 @@ class MobileInput {
 
     /**
      * The game aims at the mouse and centres the camera between the player and the mouse.
-     * Place the virtual mouse so its world position sits aimDistance from the player along the stick.
+     * Place the virtual mouse so its world position sits just ahead of the player along the stick.
      */
     applyAim() {
         if (this.lastInput === "mouse" || !this.isInGame()) return
         const player = this.engine.ent_Player
         const camera = this.engine.camera
         const mouse = this.ensureMouse()
-        mouse.x = player.posX + Math.cos(this.aimAngle) * this.aimDistance - camera.posX
-        mouse.y = player.posY + Math.sin(this.aimAngle) * this.aimDistance - camera.posY
+        mouse.x = player.posX + Math.cos(this.aimAngle) * AIM_DISTANCE - camera.posX
+        mouse.y = player.posY + Math.sin(this.aimAngle) * AIM_DISTANCE - camera.posY
     }
 
     /** The game only reloads an empty gun on a fresh trigger pull; keep a held stick or trigger firing. */
@@ -320,9 +310,7 @@ class MobileInput {
                     btn.classList.add("down")
                     if (btn.dataset.action === "pause") {
                         this.engine.options.paused = true
-                        this.engine.unpressKeys()
                         this.touchHeld = {}
-                        this.lastWritten = {}
                     } else {
                         this.touchHeld[btn.dataset.hold] = true
                     }
@@ -337,8 +325,9 @@ class MobileInput {
             } else {
                 //Menus: a tap is a click where the finger lands
                 this.touchToMouse(t)
-                this.touchHeld.left_click = true
-                this.releaseClickAfterUpdate = false
+                this.snapMouseToMenuButton()
+                this.menuTapQueued = true
+                this.menuFingerDown = true
                 this.touches.set(t.identifier, {type: "click"})
             }
         }
@@ -388,12 +377,74 @@ class MobileInput {
             } else if (role.type === "aim") {
                 this.aimStick = null
             } else if (role.type === "click") {
-                //keep the click down until the game has seen it for one frame
-                this.releaseClickAfterUpdate = true
+                //the click is released after the game has seen it for a frame
+                this.menuFingerDown = false
             }
         }
         this.updateTouchSticks()
         this.flush()
+    }
+
+    /**
+     * Menus only react to a click whose button was up the frame before. Deliver each tap as a clean
+     * up-then-down, even if something left the click held (which would otherwise freeze every menu).
+     */
+    deliverMenuTap() {
+        if (!this.menuTapQueued) return
+        if (this.isInGame()) {
+            this.menuTapQueued = false
+            return
+        }
+        if (this.engine.left_click) {
+            this.engine.left_click = false
+            this.lastWritten.left_click = false
+            this.padHeld.left_click = false
+            this.touchHeld.left_click = false
+        } else {
+            this.touchHeld.left_click = true
+            this.menuTapQueued = false
+        }
+    }
+
+    /** Menu buttons are only ~16px tall on a phone; move a near miss onto the closest button. */
+    snapMouseToMenuButton() {
+        const canvas = this.engine.ctx.canvas
+        const scale = canvas.width / canvas.getBoundingClientRect().width
+        const mouse = this.engine.mouse
+        let best = null
+        let bestDistance = TOUCH_MENU_SNAP_PX * scale
+        for (const bb of this.menuHitboxes()) {
+            const dx = Math.max(bb.x - mouse.x, 0, mouse.x - (bb.x + bb.width))
+            const dy = Math.max(bb.y - mouse.y, 0, mouse.y - (bb.y + bb.height))
+            const distance = Math.hypot(dx, dy)
+            if (distance === 0) return
+            if (distance < bestDistance) {
+                bestDistance = distance
+                best = bb
+            }
+        }
+        if (best != null) {
+            mouse.x = Math.min(Math.max(mouse.x, best.x + 1), best.x + best.width - 1)
+            mouse.y = Math.min(Math.max(mouse.y, best.y + 1), best.y + best.height - 1)
+        }
+    }
+
+    /** Clickable areas in the open menus: any bounding box a few levels inside a front-end entity. */
+    menuHitboxes() {
+        const found = []
+        const seen = new Set()
+        const visit = (obj, depth) => {
+            if (obj == null || typeof obj !== "object" || seen.has(obj) || depth > 5) return
+            seen.add(obj)
+            if (obj instanceof BoundingBox) {
+                if (obj.width > 1 && obj.height > 1) found.push(obj)
+                return
+            }
+            if (obj instanceof WorldSound || obj instanceof HTMLElement) return
+            for (const value of Array.isArray(obj) ? obj : Object.values(obj)) visit(value, depth + 1)
+        }
+        for (const entity of this.engine.ent_FE) visit(entity, 0)
+        return found
     }
 
     stickRadiusPx() {
@@ -422,8 +473,6 @@ class MobileInput {
             const magnitude = Math.hypot(aim.x, aim.y)
             if (magnitude > 0.15) {
                 this.aimAngle = Math.atan2(aim.y, aim.x)
-                this.aimDistance = AIM_DISTANCE_MIN + (AIM_DISTANCE_MAX - AIM_DISTANCE_MIN) * magnitude
-                this.aimSource = "touch"
             }
             this.touchHeld.left_click = magnitude >= TOUCH_FIRE_THRESHOLD
         } else if (this.isInGame()) {

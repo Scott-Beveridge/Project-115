@@ -26,13 +26,34 @@ if (navigator.audioSession) {
 }
 
 function unlockAudio() {
-    if (AUDIO_CTX.state !== "running") {
+    if (AUDIO_CTX.state !== "running" && document.visibilityState === "visible") {
         AUDIO_CTX.resume()
     }
 }
 for (const type of ["touchstart", "touchend", "mousedown", "keydown", "click"]) {
     window.addEventListener(type, unlockAudio, {capture: true, passive: true})
 }
+
+//Leaving the game (home screen, app switcher, locking the phone) stops the game loop but not Web Audio,
+//and the "playback" audio session would keep the music going in the background. Silence it until the game is back.
+function onGameHidden() {
+    AUDIO_CTX.suspend()
+    if (navigator.audioSession) navigator.audioSession.type = "auto"
+    const player = GAME_ENGINE.ent_Player
+    if (player != null && player.alive) {
+        GAME_ENGINE.options.paused = true
+    }
+}
+function onGameShown() {
+    if (navigator.audioSession) navigator.audioSession.type = "playback"
+    unlockAudio()
+}
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") onGameHidden()
+    else onGameShown()
+})
+window.addEventListener("pagehide", onGameHidden)
+window.addEventListener("pageshow", onGameShown)
 
 function acquireAudioBuffer(path) {
     let entry = AUDIO_BUFFERS.get(path)
