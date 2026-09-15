@@ -87,16 +87,27 @@ class HUDGun {
     }
 
     draw() {
+        //sinks out of view while reloading and kicks with recoil
+        let gunOffsetY = ((this.curr_gun.currentReloadTime / this.curr_gun.reloadTime) * this.height * ANIMATORGUN_SCALE) +
+            ((this.curr_gun.currentRecoil) * 50)
+        let gunX = GAME_ENGINE.ctx.canvas.width - (this.width * ANIMATORGUN_SCALE) - 5
+        let gunY = GAME_ENGINE.ctx.canvas.height - (this.height * ANIMATORGUN_SCALE) + gunOffsetY - 5
+        let ammoX = GAME_ENGINE.ctx.canvas.width - 5
+        let ammoY = GAME_ENGINE.ctx.canvas.height - 10
+        if (touchHudLayout()) { //top-right corner, ammo underneath
+            gunX = GAME_ENGINE.ctx.canvas.width - (this.width * ANIMATORGUN_SCALE) - TOUCH_HUD_MARGIN
+            gunY = TOUCH_HUD_MARGIN - gunOffsetY
+            ammoX = GAME_ENGINE.ctx.canvas.width - TOUCH_HUD_MARGIN
+            ammoY = TOUCH_HUD_MARGIN + (this.height * ANIMATORGUN_SCALE) + 60
+        }
+
         GAME_ENGINE.ctx.save()
         //Gun
         GAME_ENGINE.ctx.drawImage(
             this.isPaP ? this.assetPaP : this.asset, //what
             this.xStart, this.yStart, //starting at
             this.width, this.height, //to
-            GAME_ENGINE.ctx.canvas.width - (this.width * ANIMATORGUN_SCALE) - 5, //where x
-            GAME_ENGINE.ctx.canvas.height - (this.height * ANIMATORGUN_SCALE) +
-            ((this.curr_gun.currentReloadTime / this.curr_gun.reloadTime) * this.height * ANIMATORGUN_SCALE) +
-            ((this.curr_gun.currentRecoil) * 50) - 5, //where y
+            gunX, gunY, //where
             this.width * ANIMATORGUN_SCALE, this.height * ANIMATORGUN_SCALE //scale
         )
         GAME_ENGINE.ctx.restore()
@@ -127,7 +138,7 @@ class HUDGun {
         GAME_ENGINE.ctx.shadowBlur = 5
         GAME_ENGINE.ctx.shadowOffsetX = 5;
         GAME_ENGINE.ctx.shadowOffsetY = 5;
-        GAME_ENGINE.ctx.fillText(text, GAME_ENGINE.ctx.canvas.width - 5, GAME_ENGINE.ctx.canvas.height - 10)
+        GAME_ENGINE.ctx.fillText(text, ammoX, ammoY)
         GAME_ENGINE.ctx.restore()
     }
 }
@@ -141,12 +152,23 @@ class HUDPoints {
     update() {
         //points event listener
         if (GAME_ENGINE.ent_Player.points !== this.lastPlayerPoints) {
-            GAME_ENGINE.addEntity(new HUDPointsFlyOut(GAME_ENGINE.ent_Player.points - this.lastPlayerPoints, 180, GAME_ENGINE.ctx.canvas.height - 165))
+            let [x, y] = this.getPosition()
+            GAME_ENGINE.addEntity(new HUDPointsFlyOut(GAME_ENGINE.ent_Player.points - this.lastPlayerPoints, x + 170, y + 60))
         }
         this.lastPlayerPoints = GAME_ENGINE.ent_Player.points
     }
 
+    /** Top-left of the red underlay: bottom-left normally, beside the pause button with touch controls */
+    getPosition() {
+        if (touchHudLayout()) {
+            let pause = touchHudPauseCorner()
+            return [pause.x + TOUCH_HUD_MARGIN, TOUCH_HUD_MARGIN]
+        }
+        return [10, GAME_ENGINE.ctx.canvas.height - 225]
+    }
+
     draw() {
+        let [x, y] = this.getPosition()
         //red rectangle
         GAME_ENGINE.ctx.save()
         GAME_ENGINE.ctx.fillStyle = rgb(0, 0, 0)
@@ -154,8 +176,8 @@ class HUDPoints {
             this.asset, //what
             0, 0, //starting at
             this.asset.width, this.asset.height, //to
-            10, //where x
-            GAME_ENGINE.ctx.canvas.height - 225, //where y
+            x, //where x
+            y, //where y
             this.asset.width, this.asset.height - 27 //scale
         )
         GAME_ENGINE.ctx.restore()
@@ -169,7 +191,7 @@ class HUDPoints {
         GAME_ENGINE.ctx.shadowBlur = 5
         GAME_ENGINE.ctx.shadowOffsetX = 5;
         GAME_ENGINE.ctx.shadowOffsetY = 5;
-        GAME_ENGINE.ctx.fillText(GAME_ENGINE.ent_Player.points, 40, GAME_ENGINE.ctx.canvas.height - 165)
+        GAME_ENGINE.ctx.fillText(GAME_ENGINE.ent_Player.points, x + 30, y + 60)
         GAME_ENGINE.ctx.restore()
     }
 }
@@ -244,7 +266,8 @@ class HUDRound {
         GAME_ENGINE.ctx.shadowBlur = 5
         GAME_ENGINE.ctx.shadowOffsetX = 5;
         GAME_ENGINE.ctx.shadowOffsetY = 5;
-        GAME_ENGINE.ctx.fillText((GAME_ENGINE.camera.map.roundManager.curr_Round <= 10 ? HUDROUNDS_TEXT[GAME_ENGINE.camera.map.roundManager.curr_Round-1] : GAME_ENGINE.camera.map.roundManager.curr_Round), 5, GAME_ENGINE.ctx.canvas.height - 10)
+        let y = (touchHudLayout() ? touchHudPauseCorner().y + 170 : GAME_ENGINE.ctx.canvas.height - 10)
+        GAME_ENGINE.ctx.fillText((GAME_ENGINE.camera.map.roundManager.curr_Round <= 10 ? HUDROUNDS_TEXT[GAME_ENGINE.camera.map.roundManager.curr_Round-1] : GAME_ENGINE.camera.map.roundManager.curr_Round), 5, y)
         GAME_ENGINE.ctx.restore()
     }
 }
@@ -325,10 +348,15 @@ class HUDGrenade {
     }
 
     draw() {
+        let touchLayout = touchHudLayout()
+        let y = (touchLayout ?
+            TOUCH_HUD_MARGIN + (this.bottomLeftGuns.height*ANIMATORGUN_SCALE) + 90 :
+            GAME_ENGINE.ctx.canvas.height - (this.bottomLeftGuns.height*ANIMATORGUN_SCALE) - (14*this.animator.scale))
+        let margin = (touchLayout ? TOUCH_HUD_MARGIN : 5)
         for (let i = 0; i < GAME_ENGINE.ent_Player.grenades; i++) {
             this.animator.drawFrame(
-                GAME_ENGINE.ctx.canvas.width - (this.animator.width*this.animator.scale) - (i*this.animator.width/2*this.animator.scale) + GAME_ENGINE.camera.posX - 5,
-                GAME_ENGINE.ctx.canvas.height - (this.bottomLeftGuns.height*ANIMATORGUN_SCALE) - (14*this.animator.scale) + GAME_ENGINE.camera.posY
+                GAME_ENGINE.ctx.canvas.width - (this.animator.width*this.animator.scale) - (i*this.animator.width/2*this.animator.scale) + GAME_ENGINE.camera.posX - margin,
+                y + GAME_ENGINE.camera.posY
             )
         }
     }
@@ -516,7 +544,7 @@ class HUDPerks {
             this.asset,
             coords[0], coords[1],
             22, 24,
-            22 * i * HUDPERKS_SCALE + 5, 5,
+            22 * i * HUDPERKS_SCALE + 5, (touchHudLayout() ? touchHudPauseCorner().y + 200 : 5),
             22 * HUDPERKS_SCALE, 24 * HUDPERKS_SCALE
         )
     }
@@ -577,7 +605,7 @@ class HUDPowerUp {
             this.asset,
             coords[0], coords[1],
             22, 24,
-            GAME_ENGINE.ctx.canvas.width - (22 * HUDPERKS_SCALE) - (22 * i * HUDPERKS_SCALE) - 5, 5,
+            (touchHudLayout() ? GAME_ENGINE.ctx.canvas.width / 2 + (22 * i * HUDPERKS_SCALE) : GAME_ENGINE.ctx.canvas.width - (22 * HUDPERKS_SCALE) - (22 * i * HUDPERKS_SCALE) - 5), 5,
             22 * HUDPERKS_SCALE, 24 * HUDPERKS_SCALE
         )
     }
@@ -689,8 +717,10 @@ class HUDFps {
         GAME_ENGINE.ctx.shadowBlur = 10
         GAME_ENGINE.ctx.shadowOffsetX = 5;
         GAME_ENGINE.ctx.shadowOffsetY = 5;
-        GAME_ENGINE.ctx.fillText(Math.floor(1/GAME_ENGINE.clockTick) + " FPS", GAME_ENGINE.ctx.canvas.width - 5, 150)
-        GAME_ENGINE.ctx.fillText(GAME_ENGINE.clockTick * 1000 + " ms", GAME_ENGINE.ctx.canvas.width - 5, 175)
+        let x = (touchHudLayout() ? GAME_ENGINE.ctx.canvas.width - TOUCH_HUD_MARGIN : GAME_ENGINE.ctx.canvas.width - 5)
+        let y = (touchHudLayout() ? GAME_ENGINE.ctx.canvas.height - 40 : 150)
+        GAME_ENGINE.ctx.fillText(Math.floor(1/GAME_ENGINE.clockTick) + " FPS", x, y)
+        GAME_ENGINE.ctx.fillText(GAME_ENGINE.clockTick * 1000 + " ms", x, y + 25)
         GAME_ENGINE.ctx.restore()
     }
 }

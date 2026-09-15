@@ -133,13 +133,16 @@
         font-size: 2.4vmin;
         opacity: 0.7;
     }
+    /* Right thumb, laid out like COD Mobile: gun/swap top-right, grenade above fire, reload beside it, knife in the corner */
     #touchUI #tPause { left: 2vmin; top: 2vmin; width: 9vmin; height: 9vmin; font-size: 3vmin; }
-    #touchUI #tFire { right: 16vmin; bottom: 10vmin; width: 22vmin; height: 22vmin; font-size: 5vmin; border-color: rgba(255, 90, 90, 0.75); }
-    #touchUI #tUse { right: 38vmin; bottom: 34vmin; width: 17vmin; height: 17vmin; font-size: 4.4vmin; border-color: rgba(255, 215, 90, 0.7); }
-    #touchUI #tReload { right: 4vmin; bottom: 50vmin; }
-    #touchUI #tKnife { right: 20vmin; bottom: 35vmin; }
-    #touchUI #tSwap { right: 20vmin; top: 3vmin; }
-    #touchUI #tNade { right: 4vmin; top: 3vmin; }
+    #touchUI #tSwap { right: 1vmin; top: 1vmin; width: 38vmin; height: 22vmin; border-radius: 3vmin; background: transparent; border-color: rgba(255, 255, 255, 0.18); justify-content: flex-end; align-items: flex-start; padding: 0 0 1vmin 1.5vmin; }
+    #touchUI #tSwap.down { background: rgba(255, 255, 255, 0.15); }
+    #touchUI #tNade { right: 22vmin; top: 24vmin; width: 12vmin; height: 12vmin; }
+    #touchUI #tFire { right: 5vmin; top: 36vmin; width: 22vmin; height: 22vmin; font-size: 5vmin; border-color: rgba(255, 90, 90, 0.75); }
+    #touchUI #tReload { right: 30vmin; top: 43vmin; }
+    #touchUI #tUse { right: 7vmin; bottom: 24vmin; width: 12vmin; height: 12vmin; font-size: 3.4vmin; border-color: rgba(255, 215, 90, 0.8); background: rgba(90, 70, 0, 0.45); }
+    #touchUI.ingame:not(.canbuy) #tUse { display: none; }
+    #touchUI #tKnife { right: 5vmin; bottom: 5vmin; width: 17vmin; height: 17vmin; font-size: 4vmin; }
     #touchUI .stick {
         display: none;
         position: absolute;

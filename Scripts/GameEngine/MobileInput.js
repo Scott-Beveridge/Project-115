@@ -20,7 +20,8 @@ const MENU_CURSOR_SPEED = 2200 //canvas px per second at full stick
 
 const TOUCH_STICK_RADIUS_VMIN = 11
 const TOUCH_MENU_SNAP_PX = 32 //screen px: a menu tap this close to a button counts as hitting it
-const TOUCH_FIRE_AIM_DEADZONE = 0.3 //how far to drag from the FIRE button before it also aims
+const TOUCH_FIRE_AIM_DEADZONE = 0.3 //how far to drag from FIRE or KNIFE before it also aims
+const TOUCH_HUD_MARGIN = 30 //canvas px around the HUD pieces moved to the top corners
 const TAP_RING_MS = 400
 
 //Standard Gamepad API button indices
@@ -44,8 +45,19 @@ const CONTROLS_HELP = {
         "Q - Switch Weapons", "E - Throw Grenade", "ESC - Pause"],
     pad: ["Left Stick - Move (click to sprint)", "Right Stick - Aim", "RT - Shoot", "LT / B - Knife", "A - Buy / Use",
         "X - Reload", "Y - Switch Weapons", "RB - Throw Grenade", "Menu - Pause"],
-    touch: ["Left thumb - Move (push to edge to sprint)", "Right thumb - Aim", "FIRE - Shoot (drag to aim while shooting)",
-        "BUY - Buy / Use", "RELOAD, SWAP, NADE, KNIFE buttons", "II - Pause"],
+    touch: ["Left thumb - Move (push to edge to sprint)", "Right thumb - Aim", "FIRE / KNIFE - Hold to attack, drag to aim",
+        "BUY - Appears when there's something to buy", "Tap the gun - Switch weapons", "RELOAD, NADE buttons", "II - Pause"],
+}
+
+/** Touch controls are on screen: the HUD moves to the top corners, out from under the thumbs. */
+function touchHudLayout() {
+    return MOBILE_MODE && GAME_ENGINE.mobileInput != null && GAME_ENGINE.mobileInput.lastInput !== "pad"
+}
+
+/** Bottom-right corner of the pause button in canvas px, so the points and round can sit beside and below it. */
+function touchHudPauseCorner() {
+    const corner = GAME_ENGINE.mobileInput != null ? GAME_ENGINE.mobileInput.pauseCorner : null
+    return corner || {x: 160, y: 160}
 }
 
 function controlsHelpLines() {
@@ -283,16 +295,17 @@ class MobileInput {
             <div class="stick" id="moveStick"><div class="knob"></div></div>
             <div class="stick" id="aimStick"><div class="knob"></div></div>
             <button class="tbtn" id="tPause" data-action="pause">II</button>
-            <button class="tbtn" id="tFire" data-action="fire">FIRE</button>
-            <button class="tbtn" id="tUse" data-hold="key_use">BUY<small>USE</small></button>
-            <button class="tbtn" id="tReload" data-hold="key_reload">RELOAD</button>
-            <button class="tbtn" id="tKnife" data-hold="right_click">KNIFE</button>
+            <button class="tbtn" id="tSwap" data-hold="key_switchGuns"><small>SWAP</small></button>
             <button class="tbtn" id="tNade" data-hold="key_grenade">NADE</button>
-            <button class="tbtn" id="tSwap" data-hold="key_switchGuns">SWAP</button>
+            <button class="tbtn" id="tFire" data-aim-hold="left_click">FIRE</button>
+            <button class="tbtn" id="tReload" data-hold="key_reload">RELOAD</button>
+            <button class="tbtn" id="tUse" data-hold="key_use">BUY</button>
+            <button class="tbtn" id="tKnife" data-aim-hold="right_click">KNIFE</button>
             <div id="rotateHint">Turn your phone sideways to play</div>
         `
         document.body.appendChild(ui)
         this.touchUI = ui
+        this.pauseEl = ui.querySelector("#tPause")
         this.moveStickEl = ui.querySelector("#moveStick")
         this.aimStickEl = ui.querySelector("#aimStick")
 
@@ -318,10 +331,11 @@ class MobileInput {
                         this.engine.options.paused = true
                         this.touchHeld = {}
                         this.touches.set(t.identifier, {type: "button", btn})
-                    } else if (btn.dataset.action === "fire") {
-                        //hold to shoot; drag while holding to aim as well
+                    } else if (btn.dataset.aimHold) {
+                        //FIRE and KNIFE: hold to keep attacking; drag while holding to aim as well
                         const r = btn.getBoundingClientRect()
-                        this.touches.set(t.identifier, {type: "fire", btn, ox: r.left + r.width / 2, oy: r.top + r.height / 2})
+                        this.touches.set(t.identifier, {type: "aimHold", field: btn.dataset.aimHold, btn,
+                            ox: r.left + r.width / 2, oy: r.top + r.height / 2})
                     } else {
                         this.touchHeld[btn.dataset.hold] = true
                         this.touches.set(t.identifier, {type: "button", btn})
@@ -367,7 +381,7 @@ class MobileInput {
                 }
                 stick.x = dx
                 stick.y = dy
-            } else if (role.type === "fire") {
+            } else if (role.type === "aimHold") {
                 const dx = (t.clientX - role.ox) / radius
                 const dy = (t.clientY - role.oy) / radius
                 if (Math.hypot(dx, dy) > TOUCH_FIRE_AIM_DEADZONE) {
@@ -386,7 +400,7 @@ class MobileInput {
             const role = this.touches.get(t.identifier)
             if (role == null) continue
             this.touches.delete(t.identifier)
-            if (role.type === "button" || role.type === "fire") {
+            if (role.type === "button" || role.type === "aimHold") {
                 role.btn.classList.remove("down")
                 if (role.btn.dataset.hold) this.touchHeld[role.btn.dataset.hold] = false
             } else if (role.type === "move") {
@@ -485,13 +499,15 @@ class MobileInput {
             this.touchHeld.key_run = false
         }
 
-        //the aim stick only turns the player; shooting is the FIRE button
+        //the aim stick only turns the player; attacking is the FIRE and KNIFE buttons
         const aim = this.aimStick
         if (aim != null && Math.hypot(aim.x, aim.y) > 0.15) {
             this.aimAngle = Math.atan2(aim.y, aim.x)
         }
         if (this.isInGame()) {
-            this.touchHeld.left_click = [...this.touches.values()].some(role => role.type === "fire")
+            const roles = [...this.touches.values()]
+            this.touchHeld.left_click = roles.some(role => role.type === "aimHold" && role.field === "left_click")
+            this.touchHeld.right_click = roles.some(role => role.type === "aimHold" && role.field === "right_click")
         }
     }
 
@@ -523,6 +539,14 @@ class MobileInput {
         if (this.touchUI == null) return
         //Touch controls stay out of the way while the controller is in use
         this.touchUI.classList.toggle("ingame", canvasVisible && inGame && this.lastInput !== "pad")
+        //BUY only shows while the game is offering something ("... to purchase", "Hold ... to repair")
+        const hud = this.engine.camera != null && this.engine.camera.map != null ? this.engine.camera.map.hud : null
+        this.touchUI.classList.toggle("canbuy", hud != null && hud.bottomMiddleInteract.isDisplaying)
+        const pause = this.pauseEl.getBoundingClientRect()
+        if (pause.width > 0) {
+            const rect = canvas.getBoundingClientRect()
+            this.pauseCorner = {x: pause.right * canvas.width / rect.width, y: pause.bottom * canvas.height / rect.height}
+        }
         if (!inGame && (this.moveStick != null || this.aimStick != null)) {
             this.moveStick = null
             this.aimStick = null

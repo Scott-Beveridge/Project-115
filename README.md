@@ -9,7 +9,7 @@ A 2D top down clone of Call of Duty Zombies in HTML & JavaScript featuring a rei
 Open the game on your phone in Safari, tap **Share → Add to Home Screen**, then launch it from the new icon while you have internet. It saves itself for offline play (about 90 MB) and shows "Saved for offline play" when it's done. After that it runs in airplane mode.
 
 - **Controller** (Backbone, Xbox, PlayStation): Left stick move (click to sprint), right stick aim, RT shoot, LT/B knife, A buy/use, X reload, Y switch weapons, RB grenade, Menu pause. In menus, either stick moves the cursor and A clicks.
-- **Touch**: left thumb moves (push to the edge to sprint), right thumb aims, hold FIRE to shoot (drag from it to aim while shooting), plus BUY, RELOAD, SWAP, NADE and KNIFE buttons.
+- **Touch**: left thumb moves (push to the edge to sprint), right thumb aims. Hold FIRE or KNIFE to keep attacking and drag from them to aim. BUY appears when there's something to buy, tap the gun in the top-right to switch weapons, plus RELOAD and NADE. The HUD moves to the top corners so your thumbs don't cover it.
 
 Game updates download in the background and apply the next time the game is opened. After adding or renaming assets, run `python3 tools/make_offline_list.py` so they're included in the offline copy.
 
