@@ -20,7 +20,8 @@ const MENU_CURSOR_SPEED = 2200 //canvas px per second at full stick
 
 const TOUCH_STICK_RADIUS_VMIN = 11
 const TOUCH_MENU_SNAP_PX = 32 //screen px: a menu tap this close to a button counts as hitting it
-const TOUCH_FIRE_THRESHOLD = 0.35
+const TOUCH_FIRE_AIM_DEADZONE = 0.3 //how far to drag from the FIRE button before it also aims
+const TAP_RING_MS = 400
 
 //Standard Gamepad API button indices
 const PAD_A = 0, PAD_B = 1, PAD_X = 2, PAD_Y = 3, PAD_LB = 4, PAD_RB = 5, PAD_LT = 6, PAD_RT = 7,
@@ -43,8 +44,8 @@ const CONTROLS_HELP = {
         "Q - Switch Weapons", "E - Throw Grenade", "ESC - Pause"],
     pad: ["Left Stick - Move (click to sprint)", "Right Stick - Aim", "RT - Shoot", "LT / B - Knife", "A - Buy / Use",
         "X - Reload", "Y - Switch Weapons", "RB - Throw Grenade", "Menu - Pause"],
-    touch: ["Left thumb - Move (push to edge to sprint)", "Right thumb - Aim & shoot", "BUY - Buy / Use",
-        "RELOAD, SWAP, NADE, KNIFE buttons", "II - Pause"],
+    touch: ["Left thumb - Move (push to edge to sprint)", "Right thumb - Aim", "FIRE - Shoot (drag to aim while shooting)",
+        "BUY - Buy / Use", "RELOAD, SWAP, NADE, KNIFE buttons", "II - Pause"],
 }
 
 function controlsHelpLines() {
@@ -80,6 +81,7 @@ class MobileInput {
             document.getElementById("volume").value = 0.8
             this.fitCanvas()
             window.addEventListener("resize", () => this.fitCanvas())
+            window.addEventListener("orientationchange", () => setTimeout(() => this.fitCanvas(), 300))
             this.buildTouchUI()
             //iPhone can't make a canvas fullscreen; the page already fills the screen
             FullscreenButton.prototype.use = () => {}
@@ -111,7 +113,10 @@ class MobileInput {
 
     fitCanvas() {
         const canvas = this.engine.ctx.canvas
-        const aspect = window.innerWidth / window.innerHeight
+        //CSS stretches the canvas over the screen; match its pixel size to the displayed shape
+        const rect = canvas.getBoundingClientRect()
+        if (rect.width === 0 || rect.height === 0) return
+        const aspect = rect.width / rect.height
         let width = CANVAS_MIN_WIDTH
         let height = CANVAS_MIN_HEIGHT
         if (aspect >= width / height) {
@@ -125,8 +130,8 @@ class MobileInput {
             canvas.height = height
             this.engine.ctx.imageSmoothingEnabled = false
         }
-        canvas.style.width = window.innerWidth + "px"
-        canvas.style.height = window.innerHeight + "px"
+        //iPhone home screen apps can be left scrolled after rotating, which shifts touches away from what's drawn
+        if (window.scrollX !== 0 || window.scrollY !== 0) window.scrollTo(0, 0)
     }
 
     isInGame() {
@@ -278,6 +283,7 @@ class MobileInput {
             <div class="stick" id="moveStick"><div class="knob"></div></div>
             <div class="stick" id="aimStick"><div class="knob"></div></div>
             <button class="tbtn" id="tPause" data-action="pause">II</button>
+            <button class="tbtn" id="tFire" data-action="fire">FIRE</button>
             <button class="tbtn" id="tUse" data-hold="key_use">BUY<small>USE</small></button>
             <button class="tbtn" id="tReload" data-hold="key_reload">RELOAD</button>
             <button class="tbtn" id="tKnife" data-hold="right_click">KNIFE</button>
@@ -311,10 +317,15 @@ class MobileInput {
                     if (btn.dataset.action === "pause") {
                         this.engine.options.paused = true
                         this.touchHeld = {}
+                        this.touches.set(t.identifier, {type: "button", btn})
+                    } else if (btn.dataset.action === "fire") {
+                        //hold to shoot; drag while holding to aim as well
+                        const r = btn.getBoundingClientRect()
+                        this.touches.set(t.identifier, {type: "fire", btn, ox: r.left + r.width / 2, oy: r.top + r.height / 2})
                     } else {
                         this.touchHeld[btn.dataset.hold] = true
+                        this.touches.set(t.identifier, {type: "button", btn})
                     }
-                    this.touches.set(t.identifier, {type: "button", btn})
                 } else if (t.clientX < window.innerWidth / 2 && this.moveStick == null) {
                     this.moveStick = {id: t.identifier, ox: t.clientX, oy: t.clientY, x: 0, y: 0}
                     this.touches.set(t.identifier, {type: "move"})
@@ -326,6 +337,7 @@ class MobileInput {
                 //Menus: a tap is a click where the finger lands
                 this.touchToMouse(t)
                 this.snapMouseToMenuButton()
+                this.tapRingUntil = performance.now() + TAP_RING_MS
                 this.menuTapQueued = true
                 this.menuFingerDown = true
                 this.touches.set(t.identifier, {type: "click"})
@@ -355,9 +367,14 @@ class MobileInput {
                 }
                 stick.x = dx
                 stick.y = dy
-            } else if (role.type === "click") {
-                this.touchToMouse(t)
+            } else if (role.type === "fire") {
+                const dx = (t.clientX - role.ox) / radius
+                const dy = (t.clientY - role.oy) / radius
+                if (Math.hypot(dx, dy) > TOUCH_FIRE_AIM_DEADZONE) {
+                    this.aimAngle = Math.atan2(dy, dx)
+                }
             }
+            //menu taps ignore finger wiggle so a tap snapped onto a button stays on it
         }
         this.updateTouchSticks()
         this.flush()
@@ -369,7 +386,7 @@ class MobileInput {
             const role = this.touches.get(t.identifier)
             if (role == null) continue
             this.touches.delete(t.identifier)
-            if (role.type === "button") {
+            if (role.type === "button" || role.type === "fire") {
                 role.btn.classList.remove("down")
                 if (role.btn.dataset.hold) this.touchHeld[role.btn.dataset.hold] = false
             } else if (role.type === "move") {
@@ -468,15 +485,13 @@ class MobileInput {
             this.touchHeld.key_run = false
         }
 
+        //the aim stick only turns the player; shooting is the FIRE button
         const aim = this.aimStick
-        if (aim != null) {
-            const magnitude = Math.hypot(aim.x, aim.y)
-            if (magnitude > 0.15) {
-                this.aimAngle = Math.atan2(aim.y, aim.x)
-            }
-            this.touchHeld.left_click = magnitude >= TOUCH_FIRE_THRESHOLD
-        } else if (this.isInGame()) {
-            this.touchHeld.left_click = false
+        if (aim != null && Math.hypot(aim.x, aim.y) > 0.15) {
+            this.aimAngle = Math.atan2(aim.y, aim.x)
+        }
+        if (this.isInGame()) {
+            this.touchHeld.left_click = [...this.touches.values()].some(role => role.type === "fire")
         }
     }
 
@@ -495,8 +510,9 @@ class MobileInput {
         const canvas = this.engine.ctx.canvas
         const canvasVisible = !canvas.hidden
 
-        //A visible pointer for picking menu items with the controller
-        const showCursor = canvasVisible && !inGame && this.lastInput === "pad" && this.engine.mouse != null
+        //A visible pointer for picking menu items with the controller, and a flash where a menu tap landed
+        const showTapRing = this.lastInput === "touch" && performance.now() < (this.tapRingUntil || 0)
+        const showCursor = canvasVisible && !inGame && (this.lastInput === "pad" || showTapRing) && this.engine.mouse != null
         if (showCursor) {
             const rect = canvas.getBoundingClientRect()
             this.cursorEl.style.left = (rect.left + this.engine.mouse.x * rect.width / canvas.width) + "px"

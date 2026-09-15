@@ -67,12 +67,15 @@
     }
 
     /* Phone layout: the canvas fills the screen and the touch controls float on top */
+    html.mobile,
+    body.mobile {
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
     body.mobile {
         margin: 0;
-        overflow: hidden;
         background-image: none;
-        position: fixed;
-        inset: 0;
         -webkit-user-select: none;
         user-select: none;
         -webkit-touch-callout: none;
@@ -82,6 +85,8 @@
         position: fixed;
         left: 0;
         top: 0;
+        width: 100%;
+        height: 100%;
         border: none !important;
     }
     body.mobile > p {
@@ -129,9 +134,10 @@
         opacity: 0.7;
     }
     #touchUI #tPause { left: 2vmin; top: 2vmin; width: 9vmin; height: 9vmin; font-size: 3vmin; }
-    #touchUI #tUse { right: 22vmin; bottom: 34vmin; width: 17vmin; height: 17vmin; font-size: 4.4vmin; border-color: rgba(255, 215, 90, 0.7); }
-    #touchUI #tReload { right: 5vmin; bottom: 47vmin; }
-    #touchUI #tKnife { right: 3vmin; bottom: 31vmin; }
+    #touchUI #tFire { right: 16vmin; bottom: 10vmin; width: 22vmin; height: 22vmin; font-size: 5vmin; border-color: rgba(255, 90, 90, 0.75); }
+    #touchUI #tUse { right: 38vmin; bottom: 34vmin; width: 17vmin; height: 17vmin; font-size: 4.4vmin; border-color: rgba(255, 215, 90, 0.7); }
+    #touchUI #tReload { right: 4vmin; bottom: 50vmin; }
+    #touchUI #tKnife { right: 20vmin; bottom: 35vmin; }
     #touchUI #tSwap { right: 20vmin; top: 3vmin; }
     #touchUI #tNade { right: 4vmin; top: 3vmin; }
     #touchUI .stick {
@@ -215,6 +221,13 @@
     <meta name="theme-color" content="#000000">
 </head>
 <body>
+    <script>
+        //Phone layout from the very first frame, so the loading screen can't leave the page scrolled
+        if (new URLSearchParams(location.search).has("mobile") || (navigator.maxTouchPoints > 0 && matchMedia("(pointer: coarse)").matches)) {
+            document.documentElement.classList.add("mobile")
+            document.body.classList.add("mobile")
+        }
+    </script>
     <div id="myProgress"> <!--https://www.w3schools.com/howto/howto_js_progressbar.asp-->
         <div id="myBar"></div>
     </div>
