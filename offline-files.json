@@ -1,5 +1,5 @@
 {
-"bytes": 95054621,
+"bytes": 95063720,
 "files": [
 "Assets/Audio/BGM/EESong.mp3",
 "Assets/Audio/BGM/amb1.mp3",
@@ -420,6 +420,7 @@
 "Scripts/Collision/BoundingBox.js",
 "Scripts/Collision/BoundingCircle.js",
 "Scripts/GameEngine/AStar.js",
+"Scripts/GameEngine/AimAssist.js",
 "Scripts/GameEngine/Animator.js",
 "Scripts/GameEngine/AssetManager.js",
 "Scripts/GameEngine/GameEngine.js",

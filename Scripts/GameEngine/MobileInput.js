@@ -82,6 +82,11 @@ class MobileInput {
         this.touches = new Map() //touch identifier -> role
         this.moveStick = null
         this.aimStick = null
+
+        this.aimAssist = new AimAssist(engine)
+        this.padAimActive = false
+        this.padStickAngle = 0
+        engine.options.aimAssist = loadAimAssistSetting()
     }
 
     init() {
@@ -105,6 +110,7 @@ class MobileInput {
         const update = this.engine.update.bind(this.engine)
         this.engine.update = () => {
             this.pollGamepad()
+            this.applyAimAssist()
             this.applyAim()
             this.applyAutoReload()
             this.deliverMenuTap()
@@ -121,6 +127,12 @@ class MobileInput {
             }
             if (MOBILE_MODE) this.fitCanvas()
             this.updateOverlays()
+        }
+
+        const draw = this.engine.draw.bind(this.engine)
+        this.engine.draw = () => {
+            draw()
+            if (this.engine.options.aimAssist && this.isInGame()) this.aimAssist.draw(this.engine.ctx)
         }
     }
 
@@ -227,8 +239,10 @@ class MobileInput {
             held.key_switchGuns = button(PAD_Y)
             held.key_grenade = button(PAD_RB)
 
-            if (Math.hypot(rx, ry) > STICK_DEADZONE) {
-                this.aimAngle = Math.atan2(ry, rx)
+            this.padAimActive = Math.hypot(rx, ry) > STICK_DEADZONE
+            if (this.padAimActive) {
+                this.padStickAngle = Math.atan2(ry, rx)
+                this.aimAngle = this.padStickAngle
             }
         } else if (this.lastInput === "pad") {
             //Menus: either stick or the d-pad moves the cursor, A clicks
@@ -277,6 +291,37 @@ class MobileInput {
         const mouse = this.ensureMouse()
         mouse.x = player.posX + Math.cos(this.aimAngle) * AIM_DISTANCE - camera.posX
         mouse.y = player.posY + Math.sin(this.aimAngle) * AIM_DISTANCE - camera.posY
+    }
+
+    /**
+     * With aim assist on: holding FIRE/KNIFE without dragging (touch), or RT/LT with the right stick idle (controller),
+     * turns to the nearest zombie; on the controller, aiming near a zombie locks onto it.
+     */
+    applyAimAssist() {
+        if (!this.engine.options.aimAssist || this.lastInput === "mouse" || !this.isInGame()) {
+            this.aimAssist.clear()
+            return
+        }
+        let target = null
+        if (this.lastInput === "touch") {
+            const holds = [...this.touches.values()].filter(role => role.type === "aimHold" && !role.dragged)
+            if (holds.some(role => role.field === "left_click")) {
+                target = this.aimAssist.nearest()
+            } else if (holds.some(role => role.field === "right_click")) {
+                target = this.aimAssist.nearest(AIM_ASSIST_KNIFE_RANGE)
+            } else {
+                this.aimAssist.clear()
+            }
+        } else if (this.padAimActive) {
+            target = this.aimAssist.alongAim(this.padStickAngle)
+        } else if (this.padHeld.left_click) {
+            target = this.aimAssist.nearest()
+        } else if (this.padHeld.right_click) {
+            target = this.aimAssist.nearest(AIM_ASSIST_KNIFE_RANGE)
+        } else {
+            this.aimAssist.clear()
+        }
+        if (target != null) this.aimAngle = this.aimAssist.angleTo(target)
     }
 
     /** The game only reloads an empty gun on a fresh trigger pull; keep a held stick or trigger firing. */
@@ -338,7 +383,7 @@ class MobileInput {
                         //FIRE and KNIFE: hold to keep attacking; drag while holding to aim as well
                         const r = btn.getBoundingClientRect()
                         this.touches.set(t.identifier, {type: "aimHold", field: btn.dataset.aimHold, btn,
-                            ox: r.left + r.width / 2, oy: r.top + r.height / 2})
+                            ox: r.left + r.width / 2, oy: r.top + r.height / 2, dragged: false})
                     } else {
                         this.touchHeld[btn.dataset.hold] = true
                         this.touches.set(t.identifier, {type: "button", btn})
@@ -389,6 +434,7 @@ class MobileInput {
                 const dy = (t.clientY - role.oy) / radius
                 if (Math.hypot(dx, dy) > TOUCH_FIRE_AIM_DEADZONE) {
                     this.aimAngle = Math.atan2(dy, dx)
+                    role.dragged = true //aiming by hand; aim assist stays out of it for this press
                 }
             }
             //menu taps ignore finger wiggle so a tap snapped onto a button stays on it

@@ -213,7 +213,8 @@ class PauseMenu extends FrontEnd { //TODO inheritance
         this.buttons=[
             new ResumeButton(FE_Y_BUTTON),
             new ExitButton(FE_Y_BUTTON + 100),
-            new FullscreenButton(FE_Y_BUTTON + 200)
+            new FullscreenButton(FE_Y_BUTTON + 200),
+            new AimAssistButton(FE_Y_BUTTON + 300)
         ]
         this.title = "Paused"
     }
@@ -317,6 +318,7 @@ class PauseMenu extends FrontEnd { //TODO inheritance
     -starting round (int slider or adjuster buttons [1 to 250 by 1])
     -Cheats (bool button)
  */
+const OPTIONS_ROW_SPACING = 130
 class OptionsMenu extends FrontEnd {
     constructor(cursor, bottomDesc) {
         super();
@@ -330,12 +332,13 @@ class OptionsMenu extends FrontEnd {
             "No spawn delay:",
             "Starting points:",
             "Starting round:",
-            "Cheats:"
+            "Cheats:",
+            "Aim assist:"
         ]
         this.labels = []
 
         for(let i = 0; i < this.labelText.length; i++){
-            this.labels.push(new Label(850, 260 + (i * 150), this.labelText[i]))
+            this.labels.push(new Label(850, 260 + (i * OPTIONS_ROW_SPACING), this.labelText[i]))
         }
 
         let aspect169 = new GeneralButton("16:9", "Set resolution to 2560x1440.", 1620, 260);
@@ -365,9 +368,9 @@ class OptionsMenu extends FrontEnd {
 
         let index = 1;
         let zombieAmountValue = GAME_ENGINE.options.mainMenu_options_zombieAmount;
-        let zombieAmountPlus = new GeneralButton("+", "Increase concurrent Zombie amount. (DEFAULT: 24)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * 150));
-        let zombieAmount = new GeneralButton(zombieAmountValue, "(DEFAULT: 24)", 850 + this.getTextSize(this.labelText[index]) + 80, 260 + (index * 150), false);
-        let zombieAmountMinus = new GeneralButton("-", "Decrease concurrent Zombie amount. (DEFAULT: 24)", 850 + this.getTextSize(this.labelText[index]) + 80 + this.getTextSize(zombieAmountValue) + 25, 260 + (index * 150));
+        let zombieAmountPlus = new GeneralButton("+", "Increase concurrent Zombie amount. (DEFAULT: 24)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * OPTIONS_ROW_SPACING));
+        let zombieAmount = new GeneralButton(zombieAmountValue, "(DEFAULT: 24)", 850 + this.getTextSize(this.labelText[index]) + 80, 260 + (index * OPTIONS_ROW_SPACING), false);
+        let zombieAmountMinus = new GeneralButton("-", "Decrease concurrent Zombie amount. (DEFAULT: 24)", 850 + this.getTextSize(this.labelText[index]) + 80 + this.getTextSize(zombieAmountValue) + 25, 260 + (index * OPTIONS_ROW_SPACING));
 
 
         zombieAmountPlus.use = function() {
@@ -399,8 +402,8 @@ class OptionsMenu extends FrontEnd {
         }
 
         index++
-        let alwaysRunT = new GeneralButton("True", "Zombies will always spawn at fastest speed. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * 150));
-        let alwaysRunF = new GeneralButton("False", "Zombies speed is increased at higher rounds. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + this.getTextSize("True") + 60, 260 + (index * 150));
+        let alwaysRunT = new GeneralButton("True", "Zombies will always spawn at fastest speed. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * OPTIONS_ROW_SPACING));
+        let alwaysRunF = new GeneralButton("False", "Zombies speed is increased at higher rounds. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + this.getTextSize("True") + 60, 260 + (index * OPTIONS_ROW_SPACING));
 
         alwaysRunT.setSelected(GAME_ENGINE.options.mainMenu_options_zombiesAlwaysRun)
         alwaysRunF.setSelected(!GAME_ENGINE.options.mainMenu_options_zombiesAlwaysRun)
@@ -422,8 +425,8 @@ class OptionsMenu extends FrontEnd {
         }
 
         index++
-        let spawnDelayT = new GeneralButton("True", "Zombies will spawn as fast as possible. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * 150));
-        let spawnDelayF = new GeneralButton("False", "Zombies will increasing spawn faster at higher rounds. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + this.getTextSize("True") + 60, 260 + (index * 150));
+        let spawnDelayT = new GeneralButton("True", "Zombies will spawn as fast as possible. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * OPTIONS_ROW_SPACING));
+        let spawnDelayF = new GeneralButton("False", "Zombies will increasing spawn faster at higher rounds. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + this.getTextSize("True") + 60, 260 + (index * OPTIONS_ROW_SPACING));
 
         spawnDelayT.setSelected(GAME_ENGINE.options.mainMenu_options_zombiesSpawnDelay)
         spawnDelayF.setSelected(!GAME_ENGINE.options.mainMenu_options_zombiesSpawnDelay)
@@ -446,9 +449,9 @@ class OptionsMenu extends FrontEnd {
 
         index++
         let startingMoneyValue = GAME_ENGINE.options.mainMenu_options_startingMoney;
-        let startingMoneyPlus = new GeneralButton("+", "Increase starting points (DEFAULT: 500)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * 150));
-        let startingMoney = new GeneralButton(startingMoneyValue, "(DEFAULT: 500)", 850 + this.getTextSize(this.labelText[index]) + 80, 260 + (index * 150), false);
-        let startingMoneyMinus = new GeneralButton("-", "Increase starting points (DEFAULT: 500)", 850 + this.getTextSize(this.labelText[index]) + 80 + this.getTextSize(startingMoneyValue) + 25, 260 + (index * 150));
+        let startingMoneyPlus = new GeneralButton("+", "Increase starting points (DEFAULT: 500)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * OPTIONS_ROW_SPACING));
+        let startingMoney = new GeneralButton(startingMoneyValue, "(DEFAULT: 500)", 850 + this.getTextSize(this.labelText[index]) + 80, 260 + (index * OPTIONS_ROW_SPACING), false);
+        let startingMoneyMinus = new GeneralButton("-", "Increase starting points (DEFAULT: 500)", 850 + this.getTextSize(this.labelText[index]) + 80 + this.getTextSize(startingMoneyValue) + 25, 260 + (index * OPTIONS_ROW_SPACING));
 
 
         startingMoneyPlus.use = function() {
@@ -480,9 +483,9 @@ class OptionsMenu extends FrontEnd {
 
         index++
         let startingRoundValue = GAME_ENGINE.options.mainMenu_options_zombiesStartingRound;
-        let startingRoundPlus = new GeneralButton("+", "Increase starting round. (DEFAULT: 1)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * 150));
-        let startingRound = new GeneralButton(startingRoundValue, "(DEFAULT: 1)", 850 + this.getTextSize(this.labelText[index]) + 80, 260 + (index * 150), false);
-        let startingRoundMinus = new GeneralButton("-", "Decrease starting round. (DEFAULT: 1)", 850 + this.getTextSize(this.labelText[index]) + 80 + this.getTextSize(startingRoundValue) + 25, 260 + (index * 150));
+        let startingRoundPlus = new GeneralButton("+", "Increase starting round. (DEFAULT: 1)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * OPTIONS_ROW_SPACING));
+        let startingRound = new GeneralButton(startingRoundValue, "(DEFAULT: 1)", 850 + this.getTextSize(this.labelText[index]) + 80, 260 + (index * OPTIONS_ROW_SPACING), false);
+        let startingRoundMinus = new GeneralButton("-", "Decrease starting round. (DEFAULT: 1)", 850 + this.getTextSize(this.labelText[index]) + 80 + this.getTextSize(startingRoundValue) + 25, 260 + (index * OPTIONS_ROW_SPACING));
 
 
         startingRoundPlus.use = function() {
@@ -514,8 +517,8 @@ class OptionsMenu extends FrontEnd {
 
 
         index++
-        let cheatsT = new GeneralButton("True", "Cheats enabled, check pause menu ingame for controls. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * 150));
-        let cheatsF = new GeneralButton("False", "Cheats disabled (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + this.getTextSize("True") + 60, 260 + (index * 150));
+        let cheatsT = new GeneralButton("True", "Cheats enabled, check pause menu ingame for controls. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * OPTIONS_ROW_SPACING));
+        let cheatsF = new GeneralButton("False", "Cheats disabled (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + this.getTextSize("True") + 60, 260 + (index * OPTIONS_ROW_SPACING));
 
         cheatsT.setSelected(GAME_ENGINE.options.mainMenu_options_cheats)
         cheatsF.setSelected(!GAME_ENGINE.options.mainMenu_options_cheats)
@@ -535,6 +538,24 @@ class OptionsMenu extends FrontEnd {
             GAME_ENGINE.options.mainMenu_options_cheats = false;
         }
         
+        index++
+        let aimAssistT = new GeneralButton("True", "Tap FIRE or KNIFE to turn to the nearest zombie; on a controller, aiming near a zombie locks on. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * OPTIONS_ROW_SPACING));
+        let aimAssistF = new GeneralButton("False", "Aim by hand. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + this.getTextSize("True") + 60, 260 + (index * OPTIONS_ROW_SPACING));
+
+        aimAssistT.setSelected(GAME_ENGINE.options.aimAssist)
+        aimAssistF.setSelected(!GAME_ENGINE.options.aimAssist)
+        aimAssistT.use = function(a) {
+            aimAssistT.setSelected(true)
+            aimAssistF.setSelected(false)
+            setAimAssist(true)
+        }
+
+        aimAssistF.use = function(a) {
+            aimAssistT.setSelected(false)
+            aimAssistF.setSelected(true)
+            setAimAssist(false)
+        }
+
         this.buttons=[
             aspect169,
             aspect219,
@@ -558,7 +579,10 @@ class OptionsMenu extends FrontEnd {
             startingRoundMinus,
 
             cheatsT,
-            cheatsF
+            cheatsF,
+
+            aimAssistT,
+            aimAssistF
         ]
 
         this.backGroundPanel = new Panel(800, 180, 1400, 1050)
@@ -934,6 +958,25 @@ class FullscreenButton extends Button {
             document.exitFullscreen()
         }
         GAME_ENGINE.ctx.imageSmoothingEnabled = false
+    }
+}
+
+class AimAssistButton extends Button {
+    constructor(posY) {
+        super(posY, "Aim Assist: Off", "Tap FIRE or KNIFE to turn to the nearest zombie; on a controller, aiming near a zombie locks on.");
+        this.refresh()
+    }
+
+    refresh() {
+        this.text = "Aim Assist: " + (GAME_ENGINE.options.aimAssist ? "On" : "Off")
+        this.split = [this.text]
+        this.width = this.getTextSize(this.text)
+        this.bb.width = this.width
+    }
+
+    use() {
+        setAimAssist(!GAME_ENGINE.options.aimAssist)
+        this.refresh()
     }
 }
 
