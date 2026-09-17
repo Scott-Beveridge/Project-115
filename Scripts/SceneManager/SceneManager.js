@@ -19,14 +19,14 @@ class SceneManager {
     }
 
     /**
-     * Moves Camera to midpoint between Player World Pos & Mouse World Pos
+     * Keeps the Camera centred on the Player; aiming turns the player without dragging the view along
      */
     update() {
         if (this.isTrackingPlayer) {
             if (this.player == null) return
             //Moved Up and Left by (GAME_ENGINE.ctx.canvas.[width/height] / 2) for centering
-            this.posX = ((this.player.posX + GAME_ENGINE.getMouseWorldPosX()) / 2) - (GAME_ENGINE.ctx.canvas.width / 2)
-            this.posY = ((this.player.posY + GAME_ENGINE.getMouseWorldPosY()) / 2) - (GAME_ENGINE.ctx.canvas.height / 2)
+            this.posX = this.player.posX - (GAME_ENGINE.ctx.canvas.width / 2)
+            this.posY = this.player.posY - (GAME_ENGINE.ctx.canvas.height / 2)
         }
         //shakeHandler
         if (this.shake_current > 0) {

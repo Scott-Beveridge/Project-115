@@ -13,9 +13,7 @@ const CANVAS_MIN_HEIGHT = 1440
 const STICK_DEADZONE = 0.25
 const STICK_DIAGONAL = 0.38 //sin(22.5deg): split the stick into 8 directions for WASD
 const SPRINT_STICK_THRESHOLD = 0.92 //pushing the move stick to the edge sprints
-//World px from the player to the virtual mouse. The game centres the camera halfway between the player and
-//the mouse, so keeping this short keeps the camera on the player while the stick only turns them.
-const AIM_DISTANCE = 100
+const AIM_DISTANCE = 100 //world px from the player to the virtual mouse the sticks aim with
 const MENU_CURSOR_SPEED = 2200 //canvas px per second at full stick
 
 const TOUCH_STICK_RADIUS_VMIN = 11
@@ -115,6 +113,11 @@ class MobileInput {
             if (this.touchHeld.left_click && !this.menuFingerDown && !this.isInGame()) {
                 this.touchHeld.left_click = false
                 this.flush()
+            }
+            if (this.lastWritten.left_click && !this.engine.left_click) {
+                //the engine dropped the click (pressing Resume); stay in step so the next press registers
+                this.lastWritten.left_click = false
+                this.touchHeld.left_click = false
             }
             if (MOBILE_MODE) this.fitCanvas()
             this.updateOverlays()

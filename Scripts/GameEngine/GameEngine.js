@@ -356,7 +356,13 @@ class GameEngine {
             this.globalVolume = document.getElementById("volume").value * 0.25
         }
 
+        let wasPaused = this.options.paused
         this.update1(this.ent_FE)
+        if (wasPaused && !this.options.paused) {
+            //the click that pressed Resume must not also fire the gun; wait for the next press
+            this.left_click = false
+            this.last_left_click = false
+        }
         if (!this.options.paused) {
             this.update1(this.ent_MapBackground)
             this.update1(this.ent_Decals)
