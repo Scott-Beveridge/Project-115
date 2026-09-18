@@ -11,7 +11,7 @@ Open the game on your phone in Safari, tap **Share → Add to Home Screen**, the
 - **Controller** (Backbone, Xbox, PlayStation): Left stick move (click to sprint), right stick aim, RT shoot, LT/B knife, A buy/use, X reload, Y switch weapons, RB grenade, Menu pause. In menus, either stick moves the cursor and A clicks.
 - **Touch**: left thumb moves (push to the edge to sprint), right thumb aims. Hold FIRE or KNIFE to keep attacking and drag from them to aim. BUY appears when there's something to buy, tap the gun in the top-right to switch weapons, plus RELOAD and NADE. The HUD moves to the top corners so your thumbs don't cover it.
 
-- **Aim assist** (off by default; Options or the pause menu): with touch, holding FIRE or KNIFE without dragging turns you to the nearest zombie you can hit. On a controller, aiming near a zombie locks onto it, and holding RT with the right stick untouched picks the nearest one. A red ring marks the target. Mouse aiming is never assisted.
+- **Aim assist** (off by default; Options or the pause menu): with touch, holding FIRE or KNIFE without dragging turns you to the nearest zombie you can hit. Holding the right aim thumb for longer than half a second (claw grip) switches to controller behaviour instead: aiming near a zombie locks onto it, aiming elsewhere doesn't. A quick bump of the aim thumb doesn't count. On a controller, aiming within ~20 degrees of a zombie locks on, and holding RT with the right stick untouched picks the nearest. Mouse aiming is never assisted.
 
 Game updates download in the background and apply the next time the game is opened. After adding or renaming assets, run `python3 tools/make_offline_list.py` so they're included in the offline copy.
 

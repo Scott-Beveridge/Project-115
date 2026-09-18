@@ -1,6 +1,7 @@
 /**
  * Optional aim assist for touch and controller (never mouse). Off by default; toggled in Options or the pause menu.
- * Touch: holding FIRE or KNIFE without dragging turns the player to the nearest zombie.
+ * Touch: holding FIRE or KNIFE without dragging turns the player to the nearest zombie, unless the right
+ * thumb has been working the aim stick (claw grip), in which case it locks on like a controller.
  * Controller: aiming near a zombie locks onto it; holding RT/LT with the right stick idle picks the nearest.
  */
 
@@ -87,19 +88,6 @@ class AimAssist {
         return found.filter(c => !walls.some(wall => segmentHitsBox(player.posX, player.posY, c.zombie.posX, c.zombie.posY, wall.bb)))
     }
 
-    /** Ring around the locked-on zombie so the player can see what they're aiming at. */
-    draw(ctx) {
-        const zombie = this.target
-        if (zombie == null || zombie.removeFromWorld || zombie.hp <= 0) return
-        const camera = this.engine.camera
-        ctx.save()
-        ctx.strokeStyle = "rgba(255, 60, 60, 0.85)"
-        ctx.lineWidth = 6
-        ctx.beginPath()
-        ctx.arc(zombie.posX - camera.posX, zombie.posY - camera.posY, 90, 0, Math.PI * 2)
-        ctx.stroke()
-        ctx.restore()
-    }
 }
 
 /** Signed smallest difference between two angles, in -PI..PI */

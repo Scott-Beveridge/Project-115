@@ -21,6 +21,9 @@ const TOUCH_MENU_SNAP_PX = 32 //screen px: a menu tap this close to a button cou
 const TOUCH_FIRE_AIM_DEADZONE = 0.3 //how far to drag from FIRE or KNIFE before it also aims
 const TOUCH_HUD_MARGIN = 30 //canvas px around the HUD pieces moved to the top corners
 const TAP_RING_MS = 400
+//Hold the aim thumb this long before it counts as deliberate aiming (a shorter touch is a bump),
+//after which aim assist locks on like a controller instead of snapping to the nearest zombie
+const TOUCH_CLAW_HOLD_MS = 500
 
 //Standard Gamepad API button indices
 const PAD_A = 0, PAD_B = 1, PAD_X = 2, PAD_Y = 3, PAD_LB = 4, PAD_RB = 5, PAD_LT = 6, PAD_RT = 7,
@@ -86,6 +89,7 @@ class MobileInput {
         this.aimAssist = new AimAssist(engine)
         this.padAimActive = false
         this.padStickAngle = 0
+        this.touchStickAngle = 0
         engine.options.aimAssist = loadAimAssistSetting()
     }
 
@@ -129,11 +133,6 @@ class MobileInput {
             this.updateOverlays()
         }
 
-        const draw = this.engine.draw.bind(this.engine)
-        this.engine.draw = () => {
-            draw()
-            if (this.engine.options.aimAssist && this.isInGame()) this.aimAssist.draw(this.engine.ctx)
-        }
     }
 
     //---------------------------------------------------------------- layout
@@ -304,13 +303,19 @@ class MobileInput {
         }
         let target = null
         if (this.lastInput === "touch") {
-            const holds = [...this.touches.values()].filter(role => role.type === "aimHold" && !role.dragged)
-            if (holds.some(role => role.field === "left_click")) {
-                target = this.aimAssist.nearest()
-            } else if (holds.some(role => role.field === "right_click")) {
-                target = this.aimAssist.nearest(AIM_ASSIST_KNIFE_RANGE)
+            const aiming = this.aimStick != null && performance.now() - this.aimStick.startedAt >= TOUCH_CLAW_HOLD_MS
+            if (aiming) {
+                //claw grip: the right thumb is aiming, so lock on like a controller instead of snapping to the nearest
+                target = this.aimAssist.alongAim(this.touchStickAngle)
             } else {
-                this.aimAssist.clear()
+                const holds = [...this.touches.values()].filter(role => role.type === "aimHold" && !role.dragged)
+                if (holds.some(role => role.field === "left_click")) {
+                    target = this.aimAssist.nearest()
+                } else if (holds.some(role => role.field === "right_click")) {
+                    target = this.aimAssist.nearest(AIM_ASSIST_KNIFE_RANGE)
+                } else {
+                    this.aimAssist.clear()
+                }
             }
         } else if (this.padAimActive) {
             target = this.aimAssist.alongAim(this.padStickAngle)
@@ -392,7 +397,7 @@ class MobileInput {
                     this.moveStick = {id: t.identifier, ox: t.clientX, oy: t.clientY, x: 0, y: 0}
                     this.touches.set(t.identifier, {type: "move"})
                 } else if (t.clientX >= window.innerWidth / 2 && this.aimStick == null) {
-                    this.aimStick = {id: t.identifier, ox: t.clientX, oy: t.clientY, x: 0, y: 0}
+                    this.aimStick = {id: t.identifier, ox: t.clientX, oy: t.clientY, x: 0, y: 0, startedAt: performance.now()}
                     this.touches.set(t.identifier, {type: "aim"})
                 }
             } else {
@@ -552,6 +557,7 @@ class MobileInput {
         const aim = this.aimStick
         if (aim != null && Math.hypot(aim.x, aim.y) > 0.15) {
             this.aimAngle = Math.atan2(aim.y, aim.x)
+            this.touchStickAngle = this.aimAngle
         }
         if (this.isInGame()) {
             const roles = [...this.touches.values()]
