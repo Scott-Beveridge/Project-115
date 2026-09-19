@@ -2,13 +2,14 @@
  * Optional aim assist for touch and controller (never mouse). Off by default; toggled in Options or the pause menu.
  * Touch: holding FIRE or KNIFE without dragging turns the player to the nearest zombie, unless the right
  * thumb has been working the aim stick (claw grip), in which case it locks on like a controller.
- * Controller: aiming near a zombie locks onto it; holding RT/LT with the right stick idle picks the nearest.
+ * Controller: aim slows right down while it passes over a zombie, so it is easy to settle on one without
+ * ever losing control; holding RT/LT with the right stick idle picks the nearest.
  */
 
 const AIM_ASSIST_STORAGE_KEY = "project115.aimAssist"
 const AIM_ASSIST_KNIFE_RANGE = 450 //world px: knife auto-turn only for zombies about to be in reach
-const AIM_ASSIST_LOCK_ANGLE = 20 * Math.PI / 180 //controller: aim this close to a zombie to lock on
-const AIM_ASSIST_KEEP_ANGLE = 30 * Math.PI / 180 //controller: stay locked until aim drifts this far away
+const AIM_ASSIST_SLOW_ANGLE = 18 * Math.PI / 180 //stick aiming: aim this close to a zombie and it drags
+const AIM_ASSIST_SLOW_RATE = 60 * Math.PI / 180 //radians per second the aim may turn while dragging
 const AIM_ASSIST_KEEP_RANGE = 1.15 //touch: keep the current target unless another is this much closer
 
 function loadAimAssistSetting() {
@@ -53,19 +54,43 @@ class AimAssist {
         return this.target = best.zombie
     }
 
-    /** Shootable zombie closest to the direction being aimed, if any is close enough to that direction. */
+    /** Shootable zombie the aim is currently sitting on, if any. */
     alongAim(aimAngle) {
         let best = null
-        let bestDiff = AIM_ASSIST_LOCK_ANGLE
+        let bestDiff = AIM_ASSIST_SLOW_ANGLE
         for (const candidate of this.candidates()) {
             const diff = Math.abs(angleDifference(this.angleTo(candidate.zombie), aimAngle))
-            if (candidate.zombie === this.target && diff <= AIM_ASSIST_KEEP_ANGLE) return this.target
             if (diff < bestDiff) {
                 bestDiff = diff
                 best = candidate.zombie
             }
         }
         return this.target = best
+    }
+
+    /**
+     * Aim turned toward where the stick points, but crawling while it sits on a zombie, the way aim assist
+     * slows a thumbstick in a console shooter. Keep pushing and the aim still sweeps past.
+     */
+    slowedAim(current, desired, clockTick) {
+        const diff = angleDifference(desired, current)
+        if (this.alongAim(current) != null) { //already on a zombie: crawl
+            const maxStep = AIM_ASSIST_SLOW_RATE * clockTick
+            return current + Math.max(-maxStep, Math.min(maxStep, diff))
+        }
+        //a flick of the stick would jump clean over a zombie; stop at the near edge of its slow zone instead
+        const direction = Math.sign(diff) || 1
+        let entry = null
+        for (const candidate of this.candidates()) {
+            const toZombie = angleDifference(this.angleTo(candidate.zombie), current)
+            if (Math.sign(toZombie) !== direction) continue //behind the direction of the swing
+            const edge = toZombie - (direction * AIM_ASSIST_SLOW_ANGLE)
+            if (Math.abs(edge) >= Math.abs(diff)) continue //the zombie is past where the stick points
+            if (entry == null || Math.abs(edge) < Math.abs(entry)) entry = edge
+        }
+        if (entry == null) return desired
+        //land just inside the zone, so the next frame crawls instead of sticking on the boundary
+        return current + entry + (direction * 0.001)
     }
 
     /** Live zombies on screen with no wall between them and the player, nearest first. */

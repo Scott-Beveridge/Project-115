@@ -241,7 +241,8 @@ class MobileInput {
             this.padAimActive = Math.hypot(rx, ry) > STICK_DEADZONE
             if (this.padAimActive) {
                 this.padStickAngle = Math.atan2(ry, rx)
-                this.aimAngle = this.padStickAngle
+                //with aim assist on, applyAimAssist turns the aim toward the stick instead, slowly near zombies
+                if (!this.engine.options.aimAssist) this.aimAngle = this.padStickAngle
             }
         } else if (this.lastInput === "pad") {
             //Menus: either stick or the d-pad moves the cursor, A clicks
@@ -292,9 +293,15 @@ class MobileInput {
         mouse.y = player.posY + Math.sin(this.aimAngle) * AIM_DISTANCE - camera.posY
     }
 
+    /** The right thumb has been aiming long enough to count as deliberate aiming rather than a bump. */
+    clawAiming() {
+        return this.engine.options.aimAssist && this.lastInput === "touch" && this.aimStick != null &&
+            performance.now() - this.aimStick.startedAt >= TOUCH_CLAW_HOLD_MS
+    }
+
     /**
-     * With aim assist on: holding FIRE/KNIFE without dragging (touch), or RT/LT with the right stick idle (controller),
-     * turns to the nearest zombie; on the controller, aiming near a zombie locks onto it.
+     * With aim assist on: stick aiming (controller, or touch claw grip) slows right down over a zombie,
+     * while holding FIRE/KNIFE without aiming, or RT/LT with the stick idle, turns to the nearest zombie.
      */
     applyAimAssist() {
         if (!this.engine.options.aimAssist || this.lastInput === "mouse" || !this.isInGame()) {
@@ -303,10 +310,11 @@ class MobileInput {
         }
         let target = null
         if (this.lastInput === "touch") {
-            const aiming = this.aimStick != null && performance.now() - this.aimStick.startedAt >= TOUCH_CLAW_HOLD_MS
+            const aiming = this.clawAiming()
             if (aiming) {
-                //claw grip: the right thumb is aiming, so lock on like a controller instead of snapping to the nearest
-                target = this.aimAssist.alongAim(this.touchStickAngle)
+                //claw grip: the right thumb is aiming, so slow the aim over zombies like a controller
+                this.aimAngle = this.aimAssist.slowedAim(this.aimAngle, this.touchStickAngle, this.engine.clockTick)
+                return
             } else {
                 const holds = [...this.touches.values()].filter(role => role.type === "aimHold" && !role.dragged)
                 if (holds.some(role => role.field === "left_click")) {
@@ -318,7 +326,8 @@ class MobileInput {
                 }
             }
         } else if (this.padAimActive) {
-            target = this.aimAssist.alongAim(this.padStickAngle)
+            this.aimAngle = this.aimAssist.slowedAim(this.aimAngle, this.padStickAngle, this.engine.clockTick)
+            return
         } else if (this.padHeld.left_click) {
             target = this.aimAssist.nearest()
         } else if (this.padHeld.right_click) {
@@ -556,8 +565,9 @@ class MobileInput {
         //the aim stick only turns the player; attacking is the FIRE and KNIFE buttons
         const aim = this.aimStick
         if (aim != null && Math.hypot(aim.x, aim.y) > 0.15) {
-            this.aimAngle = Math.atan2(aim.y, aim.x)
-            this.touchStickAngle = this.aimAngle
+            this.touchStickAngle = Math.atan2(aim.y, aim.x)
+            //while claw aiming, applyAimAssist turns the aim toward the thumb instead, slowly near zombies
+            if (!this.clawAiming()) this.aimAngle = this.touchStickAngle
         }
         if (this.isInGame()) {
             const roles = [...this.touches.values()]

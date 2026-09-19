@@ -539,7 +539,7 @@ class OptionsMenu extends FrontEnd {
         }
         
         index++
-        let aimAssistT = new GeneralButton("True", "Tap FIRE or KNIFE to turn to the nearest zombie; on a controller, aiming near a zombie locks on. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * OPTIONS_ROW_SPACING));
+        let aimAssistT = new GeneralButton("True", "Aiming with a stick slows down over zombies; holding FIRE or KNIFE without aiming turns you to the nearest one. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + 20, 260 + (index * OPTIONS_ROW_SPACING));
         let aimAssistF = new GeneralButton("False", "Aim by hand. (DEFAULT: False)", 850 + this.getTextSize(this.labelText[index]) + this.getTextSize("True") + 60, 260 + (index * OPTIONS_ROW_SPACING));
 
         aimAssistT.setSelected(GAME_ENGINE.options.aimAssist)
@@ -963,7 +963,7 @@ class FullscreenButton extends Button {
 
 class AimAssistButton extends Button {
     constructor(posY) {
-        super(posY, "Aim Assist: Off", "Tap FIRE or KNIFE to turn to the nearest zombie; on a controller, aiming near a zombie locks on.");
+        super(posY, "Aim Assist: Off", "Aiming with a stick slows down over zombies; holding FIRE or KNIFE without aiming turns you to the nearest one.");
         this.refresh()
     }
 
