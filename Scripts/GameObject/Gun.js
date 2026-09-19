@@ -422,8 +422,10 @@ class Gun {
             return false
         }
 
-        if (this.currentReloadTime > 0) {
-            return
+        //Already reloading: a trigger pull or reload press must not start it over. The magazine is only
+        //refilled on the frame after the timer runs out, and that gap used to let spammed shots restart it.
+        if (this.currentReloadTime > 0 || this.isReloading) {
+            return false
         }
 
         //otherwise, reset stats
